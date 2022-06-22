@@ -66,17 +66,6 @@ namespace translate_text
             string language = "en";
 
             // Use the Translator detect function
-
-
-            // return the language
-            return language;
-        }
-
-        static async Task<string> Translate(string text, string sourceLanguage)
-        {
-            string translation = "";
-
-            // Use the Translator translate function
             object[] body = new object[] { new { Text = text } };
             var requestBody = JsonConvert.SerializeObject(body);
             using (var client = new HttpClient())
@@ -101,6 +90,41 @@ namespace translate_text
                     language = (string)jsonResponse[0]["language"]; 
                 }
             }
+
+            // return the language
+            return language;
+        }
+
+        static async Task<string> Translate(string text, string sourceLanguage)
+        {
+            string translation = "";
+
+            // Use the Translator translate function
+            object[] body = new object[] { new { Text = text } };
+            var requestBody = JsonConvert.SerializeObject(body);
+            using (var client = new HttpClient())
+            {
+                using (var request = new HttpRequestMessage())
+                {
+                    // Build the request
+                    string path = "/translate?api-version=3.0&from=" + sourceLanguage + "&to=en" ;
+                    request.Method = HttpMethod.Post;
+                    request.RequestUri = new Uri(translatorEndpoint + path);
+                    request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+                    request.Headers.Add("Ocp-Apim-Subscription-Key", cogSvcKey);
+                    request.Headers.Add("Ocp-Apim-Subscription-Region", cogSvcRegion);
+
+                    // Send the request and get response
+                    HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false);
+                    // Read response as a string
+                    string responseContent = await response.Content.ReadAsStringAsync();
+
+                    // Parse JSON array and get translation
+                    JArray jsonResponse = JArray.Parse(responseContent);
+                    translation = (string)jsonResponse[0]["translations"][0]["text"];  
+                }
+            }
+
 
 
             // Return the translation
